@@ -7,16 +7,10 @@
  */
 
 export interface DecryptInput {
-  /** Base64-encoded RSA-encrypted AES key */
   encryptedAesKey: string;
-  /** Base64-encoded initialization vector */
   iv: string;
-  /** Base64-encoded GCM authentication tag */
   authTag: string;
-  /** Base64-encoded AES-256-GCM encrypted file content */
   ciphertext: string;
-  /** PEM-encoded RSA private key */
   privateKey: string;
-  /** Original file name for logging */
   fileName?: string;
 }

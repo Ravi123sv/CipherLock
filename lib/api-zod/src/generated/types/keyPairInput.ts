@@ -7,11 +7,7 @@
  */
 
 export interface KeyPairInput {
-  /**
-     * Human-readable name for this key pair
-     * @minLength 1
-     */
+  /** @minLength 1 */
   label: string;
-  /** RSA key size in bits (default 2048) */
   keySize?: number;
 }

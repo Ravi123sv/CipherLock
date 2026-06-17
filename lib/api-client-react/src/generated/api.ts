@@ -29,7 +29,10 @@ import type {
   HealthStatus,
   KeyPairInput,
   KeyPairMeta,
-  KeyPairResult
+  KeyPairResult,
+  Room,
+  RoomFile,
+  RoomFileInput
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -53,7 +56,6 @@ export const getHealthCheckUrl = () => {
 }
 
 /**
- * Returns server health status
  * @summary Health check
  */
 export const healthCheck = async ( options?: RequestInit): Promise<HealthStatus> => {
@@ -131,7 +133,6 @@ export const getGenerateKeyPairUrl = () => {
 }
 
 /**
- * Generates a new RSA-2048 key pair and stores metadata
  * @summary Generate RSA key pair
  */
 export const generateKeyPair = async (keyPairInput: KeyPairInput, options?: RequestInit): Promise<KeyPairResult> => {
@@ -203,7 +204,6 @@ export const getListKeyPairsUrl = () => {
 }
 
 /**
- * Returns metadata for all stored key pairs (no private keys)
  * @summary List stored key pairs
  */
 export const listKeyPairs = async ( options?: RequestInit): Promise<KeyPairMeta[]> => {
@@ -428,7 +428,6 @@ export const getEncryptFileUrl = () => {
 }
 
 /**
- * Encrypts file content with AES-256-GCM; the AES key is encrypted with the provided RSA public key
  * @summary Encrypt a file with hybrid AES-RSA
  */
 export const encryptFile = async (encryptInput: EncryptInput, options?: RequestInit): Promise<EncryptResult> => {
@@ -500,7 +499,6 @@ export const getDecryptFileUrl = () => {
 }
 
 /**
- * Decrypts an AES-256-GCM encrypted file using the RSA private key to unwrap the AES key
  * @summary Decrypt an encrypted file bundle
  */
 export const decryptFile = async (decryptInput: DecryptInput, options?: RequestInit): Promise<DecryptResult> => {
@@ -572,7 +570,6 @@ export const getListFileOperationsUrl = () => {
 }
 
 /**
- * Returns a log of recent encrypt/decrypt operations
  * @summary List recent file operations
  */
 export const listFileOperations = async ( options?: RequestInit): Promise<FileOperation[]> => {
@@ -650,7 +647,6 @@ export const getGetFileStatsUrl = () => {
 }
 
 /**
- * Returns aggregated stats for encrypt/decrypt activity
  * @summary Get file operation statistics
  */
 export const getFileStats = async ( options?: RequestInit): Promise<FileStats> => {
@@ -718,4 +714,594 @@ export function useGetFileStats<TData = Awaited<ReturnType<typeof getFileStats>>
 
 
 
+
+export const getCreateRoomUrl = () => {
+
+
+
+
+  return `/api/rooms`
+}
+
+/**
+ * @summary Create a transfer room and get a pairing code
+ */
+export const createRoom = async ( options?: RequestInit): Promise<Room> => {
+
+  return customFetch<Room>(getCreateRoomUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getCreateRoomMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createRoom>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createRoom>>, TError,void, TContext> => {
+
+const mutationKey = ['createRoom'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createRoom>>, void> = () => {
+
+
+          return  createRoom(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateRoomMutationResult = NonNullable<Awaited<ReturnType<typeof createRoom>>>
+
+    export type CreateRoomMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Create a transfer room and get a pairing code
+ */
+export const useCreateRoom = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createRoom>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createRoom>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getCreateRoomMutationOptions(options));
+    }
+
+export const getGetRoomStatusUrl = (code: string,) => {
+
+
+
+
+  return `/api/rooms/${code}`
+}
+
+/**
+ * @summary Get room status
+ */
+export const getRoomStatus = async (code: string, options?: RequestInit): Promise<Room> => {
+
+  return customFetch<Room>(getGetRoomStatusUrl(code),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetRoomStatusQueryKey = (code: string,) => {
+    return [
+    `/api/rooms/${code}`
+    ] as const;
+    }
+
+
+export const getGetRoomStatusQueryOptions = <TData = Awaited<ReturnType<typeof getRoomStatus>>, TError = ErrorType<void>>(code: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getRoomStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetRoomStatusQueryKey(code);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getRoomStatus>>> = ({ signal }) => getRoomStatus(code, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(code), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getRoomStatus>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetRoomStatusQueryResult = NonNullable<Awaited<ReturnType<typeof getRoomStatus>>>
+export type GetRoomStatusQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get room status
+ */
+
+export function useGetRoomStatus<TData = Awaited<ReturnType<typeof getRoomStatus>>, TError = ErrorType<void>>(
+ code: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getRoomStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetRoomStatusQueryOptions(code,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCloseRoomUrl = (code: string,) => {
+
+
+
+
+  return `/api/rooms/${code}`
+}
+
+/**
+ * @summary Close a room
+ */
+export const closeRoom = async (code: string, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getCloseRoomUrl(code),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getCloseRoomMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof closeRoom>>, TError,{code: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof closeRoom>>, TError,{code: string}, TContext> => {
+
+const mutationKey = ['closeRoom'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof closeRoom>>, {code: string}> = (props) => {
+          const {code} = props ?? {};
+
+          return  closeRoom(code,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CloseRoomMutationResult = NonNullable<Awaited<ReturnType<typeof closeRoom>>>
+
+    export type CloseRoomMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Close a room
+ */
+export const useCloseRoom = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof closeRoom>>, TError,{code: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof closeRoom>>,
+        TError,
+        {code: string},
+        TContext
+      > => {
+      return useMutation(getCloseRoomMutationOptions(options));
+    }
+
+export const getJoinRoomUrl = (code: string,) => {
+
+
+
+
+  return `/api/rooms/${code}/join`
+}
+
+/**
+ * @summary Join an existing room as the second device
+ */
+export const joinRoom = async (code: string, options?: RequestInit): Promise<Room> => {
+
+  return customFetch<Room>(getJoinRoomUrl(code),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getJoinRoomMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof joinRoom>>, TError,{code: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof joinRoom>>, TError,{code: string}, TContext> => {
+
+const mutationKey = ['joinRoom'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof joinRoom>>, {code: string}> = (props) => {
+          const {code} = props ?? {};
+
+          return  joinRoom(code,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type JoinRoomMutationResult = NonNullable<Awaited<ReturnType<typeof joinRoom>>>
+
+    export type JoinRoomMutationError = ErrorType<void>
+
+    /**
+ * @summary Join an existing room as the second device
+ */
+export const useJoinRoom = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof joinRoom>>, TError,{code: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof joinRoom>>,
+        TError,
+        {code: string},
+        TContext
+      > => {
+      return useMutation(getJoinRoomMutationOptions(options));
+    }
+
+export const getSendRoomFileUrl = (code: string,) => {
+
+
+
+
+  return `/api/rooms/${code}/files`
+}
+
+/**
+ * @summary Upload an encrypted file to a room for the peer to receive
+ */
+export const sendRoomFile = async (code: string,
+    roomFileInput: RoomFileInput, options?: RequestInit): Promise<RoomFile> => {
+
+  return customFetch<RoomFile>(getSendRoomFileUrl(code),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      roomFileInput,)
+  }
+);}
+
+
+
+
+export const getSendRoomFileMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof sendRoomFile>>, TError,{code: string;data: BodyType<RoomFileInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof sendRoomFile>>, TError,{code: string;data: BodyType<RoomFileInput>}, TContext> => {
+
+const mutationKey = ['sendRoomFile'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof sendRoomFile>>, {code: string;data: BodyType<RoomFileInput>}> = (props) => {
+          const {code,data} = props ?? {};
+
+          return  sendRoomFile(code,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SendRoomFileMutationResult = NonNullable<Awaited<ReturnType<typeof sendRoomFile>>>
+    export type SendRoomFileMutationBody = BodyType<RoomFileInput>
+    export type SendRoomFileMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Upload an encrypted file to a room for the peer to receive
+ */
+export const useSendRoomFile = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof sendRoomFile>>, TError,{code: string;data: BodyType<RoomFileInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof sendRoomFile>>,
+        TError,
+        {code: string;data: BodyType<RoomFileInput>},
+        TContext
+      > => {
+      return useMutation(getSendRoomFileMutationOptions(options));
+    }
+
+export const getListRoomFilesUrl = (code: string,) => {
+
+
+
+
+  return `/api/rooms/${code}/files`
+}
+
+/**
+ * @summary List files pending in a room
+ */
+export const listRoomFiles = async (code: string, options?: RequestInit): Promise<RoomFile[]> => {
+
+  return customFetch<RoomFile[]>(getListRoomFilesUrl(code),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListRoomFilesQueryKey = (code: string,) => {
+    return [
+    `/api/rooms/${code}/files`
+    ] as const;
+    }
+
+
+export const getListRoomFilesQueryOptions = <TData = Awaited<ReturnType<typeof listRoomFiles>>, TError = ErrorType<unknown>>(code: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listRoomFiles>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListRoomFilesQueryKey(code);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listRoomFiles>>> = ({ signal }) => listRoomFiles(code, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(code), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listRoomFiles>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListRoomFilesQueryResult = NonNullable<Awaited<ReturnType<typeof listRoomFiles>>>
+export type ListRoomFilesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List files pending in a room
+ */
+
+export function useListRoomFiles<TData = Awaited<ReturnType<typeof listRoomFiles>>, TError = ErrorType<unknown>>(
+ code: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listRoomFiles>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListRoomFilesQueryOptions(code,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getDownloadRoomFileUrl = (code: string,
+    fileId: number,) => {
+
+
+
+
+  return `/api/rooms/${code}/files/${fileId}`
+}
+
+/**
+ * @summary Download a specific file from a room
+ */
+export const downloadRoomFile = async (code: string,
+    fileId: number, options?: RequestInit): Promise<RoomFile> => {
+
+  return customFetch<RoomFile>(getDownloadRoomFileUrl(code,fileId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getDownloadRoomFileQueryKey = (code: string,
+    fileId: number,) => {
+    return [
+    `/api/rooms/${code}/files/${fileId}`
+    ] as const;
+    }
+
+
+export const getDownloadRoomFileQueryOptions = <TData = Awaited<ReturnType<typeof downloadRoomFile>>, TError = ErrorType<void>>(code: string,
+    fileId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof downloadRoomFile>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getDownloadRoomFileQueryKey(code,fileId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof downloadRoomFile>>> = ({ signal }) => downloadRoomFile(code,fileId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(code && fileId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof downloadRoomFile>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type DownloadRoomFileQueryResult = NonNullable<Awaited<ReturnType<typeof downloadRoomFile>>>
+export type DownloadRoomFileQueryError = ErrorType<void>
+
+
+/**
+ * @summary Download a specific file from a room
+ */
+
+export function useDownloadRoomFile<TData = Awaited<ReturnType<typeof downloadRoomFile>>, TError = ErrorType<void>>(
+ code: string,
+    fileId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof downloadRoomFile>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getDownloadRoomFileQueryOptions(code,fileId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getAcknowledgeRoomFileUrl = (code: string,
+    fileId: number,) => {
+
+
+
+
+  return `/api/rooms/${code}/files/${fileId}`
+}
+
+/**
+ * @summary Acknowledge receipt and remove a file from the room
+ */
+export const acknowledgeRoomFile = async (code: string,
+    fileId: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getAcknowledgeRoomFileUrl(code,fileId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getAcknowledgeRoomFileMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof acknowledgeRoomFile>>, TError,{code: string;fileId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof acknowledgeRoomFile>>, TError,{code: string;fileId: number}, TContext> => {
+
+const mutationKey = ['acknowledgeRoomFile'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof acknowledgeRoomFile>>, {code: string;fileId: number}> = (props) => {
+          const {code,fileId} = props ?? {};
+
+          return  acknowledgeRoomFile(code,fileId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AcknowledgeRoomFileMutationResult = NonNullable<Awaited<ReturnType<typeof acknowledgeRoomFile>>>
+
+    export type AcknowledgeRoomFileMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Acknowledge receipt and remove a file from the room
+ */
+export const useAcknowledgeRoomFile = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof acknowledgeRoomFile>>, TError,{code: string;fileId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof acknowledgeRoomFile>>,
+        TError,
+        {code: string;fileId: number},
+        TContext
+      > => {
+      return useMutation(getAcknowledgeRoomFileMutationOptions(options));
+    }
 

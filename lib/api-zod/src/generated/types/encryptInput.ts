@@ -7,15 +7,9 @@
  */
 
 export interface EncryptInput {
-  /** Original file name */
   fileName: string;
-  /** Base64-encoded file content */
   fileData: string;
-  /** PEM-encoded RSA public key used to wrap the AES key */
   publicKey: string;
-  /**
-     * Optional reference to a stored key pair
-     * @nullable
-     */
+  /** @nullable */
   keyId?: number | null;
 }

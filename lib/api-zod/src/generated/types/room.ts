@@ -6,10 +6,11 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface KeyPairMeta {
-  id: number;
-  label: string;
-  keySize: number;
-  fingerprint: string;
+export interface Room {
+  code: string;
+  /** waiting | connected | closed */
+  status: string;
+  peerCount?: number;
   createdAt: string;
+  expiresAt?: string;
 }

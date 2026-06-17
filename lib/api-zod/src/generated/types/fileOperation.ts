@@ -8,7 +8,6 @@
 
 export interface FileOperation {
   id: number;
-  /** encrypt or decrypt */
   type: string;
   fileName: string;
   algorithm: string;

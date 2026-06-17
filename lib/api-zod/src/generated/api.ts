@@ -9,7 +9,6 @@ import * as zod from 'zod';
 
 
 /**
- * Returns server health status
  * @summary Health check
  */
 export const HealthCheckResponse = zod.object({
@@ -18,27 +17,25 @@ export const HealthCheckResponse = zod.object({
 
 
 /**
- * Generates a new RSA-2048 key pair and stores metadata
  * @summary Generate RSA key pair
  */
 
 export const generateKeyPairBodyKeySizeDefault = 2048;
 
 export const GenerateKeyPairBody = zod.object({
-  "label": zod.string().min(1).describe('Human-readable name for this key pair'),
-  "keySize": zod.number().default(generateKeyPairBodyKeySizeDefault).describe('RSA key size in bits (default 2048)')
+  "label": zod.string().min(1),
+  "keySize": zod.number().default(generateKeyPairBodyKeySizeDefault)
 })
 
 
 /**
- * Returns metadata for all stored key pairs (no private keys)
  * @summary List stored key pairs
  */
 export const ListKeyPairsResponseItem = zod.object({
   "id": zod.number(),
   "label": zod.string(),
   "keySize": zod.number(),
-  "fingerprint": zod.string().describe('SHA-256 fingerprint of the public key'),
+  "fingerprint": zod.string(),
   "createdAt": zod.string()
 })
 export const ListKeyPairsResponse = zod.array(ListKeyPairsResponseItem)
@@ -56,8 +53,8 @@ export const GetKeyPairResponse = zod.object({
   "label": zod.string(),
   "keySize": zod.number(),
   "fingerprint": zod.string(),
-  "publicKey": zod.string().describe('PEM-encoded RSA public key'),
-  "privateKey": zod.string().describe('PEM-encoded RSA private key'),
+  "publicKey": zod.string(),
+  "privateKey": zod.string(),
   "createdAt": zod.string()
 })
 
@@ -71,56 +68,53 @@ export const DeleteKeyPairParams = zod.object({
 
 
 /**
- * Encrypts file content with AES-256-GCM; the AES key is encrypted with the provided RSA public key
  * @summary Encrypt a file with hybrid AES-RSA
  */
 export const EncryptFileBody = zod.object({
-  "fileName": zod.string().describe('Original file name'),
-  "fileData": zod.string().describe('Base64-encoded file content'),
-  "publicKey": zod.string().describe('PEM-encoded RSA public key used to wrap the AES key'),
-  "keyId": zod.number().nullish().describe('Optional reference to a stored key pair')
+  "fileName": zod.string(),
+  "fileData": zod.string(),
+  "publicKey": zod.string(),
+  "keyId": zod.number().nullish()
 })
 
 export const EncryptFileResponse = zod.object({
   "id": zod.number().optional(),
   "fileName": zod.string(),
-  "encryptedAesKey": zod.string().describe('Base64-encoded RSA-encrypted AES key'),
-  "iv": zod.string().describe('Base64-encoded initialization vector'),
-  "authTag": zod.string().describe('Base64-encoded GCM authentication tag'),
-  "ciphertext": zod.string().describe('Base64-encoded AES-256-GCM encrypted file content'),
-  "algorithm": zod.string().describe('Encryption algorithm description'),
+  "encryptedAesKey": zod.string(),
+  "iv": zod.string(),
+  "authTag": zod.string(),
+  "ciphertext": zod.string(),
+  "algorithm": zod.string(),
   "createdAt": zod.string()
 })
 
 
 /**
- * Decrypts an AES-256-GCM encrypted file using the RSA private key to unwrap the AES key
  * @summary Decrypt an encrypted file bundle
  */
 export const DecryptFileBody = zod.object({
-  "encryptedAesKey": zod.string().describe('Base64-encoded RSA-encrypted AES key'),
-  "iv": zod.string().describe('Base64-encoded initialization vector'),
-  "authTag": zod.string().describe('Base64-encoded GCM authentication tag'),
-  "ciphertext": zod.string().describe('Base64-encoded AES-256-GCM encrypted file content'),
-  "privateKey": zod.string().describe('PEM-encoded RSA private key'),
-  "fileName": zod.string().optional().describe('Original file name for logging')
+  "encryptedAesKey": zod.string(),
+  "iv": zod.string(),
+  "authTag": zod.string(),
+  "ciphertext": zod.string(),
+  "privateKey": zod.string(),
+  "fileName": zod.string().optional()
 })
 
 export const DecryptFileResponse = zod.object({
   "fileName": zod.string(),
-  "fileData": zod.string().describe('Base64-encoded decrypted file content'),
+  "fileData": zod.string(),
   "algorithm": zod.string(),
   "decryptedAt": zod.string().optional()
 })
 
 
 /**
- * Returns a log of recent encrypt/decrypt operations
  * @summary List recent file operations
  */
 export const ListFileOperationsResponseItem = zod.object({
   "id": zod.number(),
-  "type": zod.string().describe('encrypt or decrypt'),
+  "type": zod.string(),
   "fileName": zod.string(),
   "algorithm": zod.string(),
   "keyId": zod.number().nullish(),
@@ -131,7 +125,6 @@ export const ListFileOperationsResponse = zod.array(ListFileOperationsResponseIt
 
 
 /**
- * Returns aggregated stats for encrypt/decrypt activity
  * @summary Get file operation statistics
  */
 export const GetFileStatsResponse = zod.object({
@@ -141,13 +134,129 @@ export const GetFileStatsResponse = zod.object({
   "totalKeyPairs": zod.number().optional(),
   "recentActivity": zod.array(zod.object({
   "id": zod.number(),
-  "type": zod.string().describe('encrypt or decrypt'),
+  "type": zod.string(),
   "fileName": zod.string(),
   "algorithm": zod.string(),
   "keyId": zod.number().nullish(),
   "keyLabel": zod.string().nullish(),
   "createdAt": zod.string()
 }))
+})
+
+
+/**
+ * @summary Get room status
+ */
+export const GetRoomStatusParams = zod.object({
+  "code": zod.coerce.string()
+})
+
+export const GetRoomStatusResponse = zod.object({
+  "code": zod.string(),
+  "status": zod.string().describe('waiting | connected | closed'),
+  "peerCount": zod.number().optional(),
+  "createdAt": zod.string(),
+  "expiresAt": zod.string().optional()
+})
+
+
+/**
+ * @summary Close a room
+ */
+export const CloseRoomParams = zod.object({
+  "code": zod.coerce.string()
+})
+
+
+/**
+ * @summary Join an existing room as the second device
+ */
+export const JoinRoomParams = zod.object({
+  "code": zod.coerce.string()
+})
+
+export const JoinRoomResponse = zod.object({
+  "code": zod.string(),
+  "status": zod.string().describe('waiting | connected | closed'),
+  "peerCount": zod.number().optional(),
+  "createdAt": zod.string(),
+  "expiresAt": zod.string().optional()
+})
+
+
+/**
+ * @summary Upload an encrypted file to a room for the peer to receive
+ */
+export const SendRoomFileParams = zod.object({
+  "code": zod.coerce.string()
+})
+
+export const SendRoomFileBody = zod.object({
+  "fileName": zod.string(),
+  "fileSize": zod.number().optional(),
+  "mimeType": zod.string().optional(),
+  "encryptedAesKey": zod.string(),
+  "iv": zod.string(),
+  "authTag": zod.string(),
+  "ciphertext": zod.string(),
+  "senderPublicKey": zod.string().describe('PEM public key of the sender for verification')
+})
+
+
+/**
+ * @summary List files pending in a room
+ */
+export const ListRoomFilesParams = zod.object({
+  "code": zod.coerce.string()
+})
+
+export const ListRoomFilesResponseItem = zod.object({
+  "id": zod.number(),
+  "roomCode": zod.string(),
+  "fileName": zod.string(),
+  "fileSize": zod.number().nullish(),
+  "mimeType": zod.string().nullish(),
+  "encryptedAesKey": zod.string(),
+  "iv": zod.string(),
+  "authTag": zod.string(),
+  "ciphertext": zod.string(),
+  "senderPublicKey": zod.string(),
+  "downloadedAt": zod.string().nullish(),
+  "createdAt": zod.string()
+})
+export const ListRoomFilesResponse = zod.array(ListRoomFilesResponseItem)
+
+
+/**
+ * @summary Download a specific file from a room
+ */
+export const DownloadRoomFileParams = zod.object({
+  "code": zod.coerce.string(),
+  "fileId": zod.coerce.number()
+})
+
+export const DownloadRoomFileResponse = zod.object({
+  "id": zod.number(),
+  "roomCode": zod.string(),
+  "fileName": zod.string(),
+  "fileSize": zod.number().nullish(),
+  "mimeType": zod.string().nullish(),
+  "encryptedAesKey": zod.string(),
+  "iv": zod.string(),
+  "authTag": zod.string(),
+  "ciphertext": zod.string(),
+  "senderPublicKey": zod.string(),
+  "downloadedAt": zod.string().nullish(),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary Acknowledge receipt and remove a file from the room
+ */
+export const AcknowledgeRoomFileParams = zod.object({
+  "code": zod.coerce.string(),
+  "fileId": zod.coerce.number()
 })
 
 

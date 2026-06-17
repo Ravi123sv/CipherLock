@@ -10,12 +10,8 @@ export interface HealthStatus {
 }
 
 export interface KeyPairInput {
-  /**
-     * Human-readable name for this key pair
-     * @minLength 1
-     */
+  /** @minLength 1 */
   label: string;
-  /** RSA key size in bits (default 2048) */
   keySize?: number;
 }
 
@@ -23,7 +19,6 @@ export interface KeyPairMeta {
   id: number;
   label: string;
   keySize: number;
-  /** SHA-256 fingerprint of the public key */
   fingerprint: string;
   createdAt: string;
 }
@@ -33,61 +28,41 @@ export interface KeyPairResult {
   label: string;
   keySize: number;
   fingerprint: string;
-  /** PEM-encoded RSA public key */
   publicKey: string;
-  /** PEM-encoded RSA private key */
   privateKey: string;
   createdAt: string;
 }
 
 export interface EncryptInput {
-  /** Original file name */
   fileName: string;
-  /** Base64-encoded file content */
   fileData: string;
-  /** PEM-encoded RSA public key used to wrap the AES key */
   publicKey: string;
-  /**
-     * Optional reference to a stored key pair
-     * @nullable
-     */
+  /** @nullable */
   keyId?: number | null;
 }
 
 export interface EncryptResult {
   id?: number;
   fileName: string;
-  /** Base64-encoded RSA-encrypted AES key */
   encryptedAesKey: string;
-  /** Base64-encoded initialization vector */
   iv: string;
-  /** Base64-encoded GCM authentication tag */
   authTag: string;
-  /** Base64-encoded AES-256-GCM encrypted file content */
   ciphertext: string;
-  /** Encryption algorithm description */
   algorithm: string;
   createdAt: string;
 }
 
 export interface DecryptInput {
-  /** Base64-encoded RSA-encrypted AES key */
   encryptedAesKey: string;
-  /** Base64-encoded initialization vector */
   iv: string;
-  /** Base64-encoded GCM authentication tag */
   authTag: string;
-  /** Base64-encoded AES-256-GCM encrypted file content */
   ciphertext: string;
-  /** PEM-encoded RSA private key */
   privateKey: string;
-  /** Original file name for logging */
   fileName?: string;
 }
 
 export interface DecryptResult {
   fileName: string;
-  /** Base64-encoded decrypted file content */
   fileData: string;
   algorithm: string;
   decryptedAt?: string;
@@ -95,7 +70,6 @@ export interface DecryptResult {
 
 export interface FileOperation {
   id: number;
-  /** encrypt or decrypt */
   type: string;
   fileName: string;
   algorithm: string;
@@ -112,5 +86,44 @@ export interface FileStats {
   totalDecryptions: number;
   totalKeyPairs?: number;
   recentActivity: FileOperation[];
+}
+
+export interface Room {
+  code: string;
+  /** waiting | connected | closed */
+  status: string;
+  peerCount?: number;
+  createdAt: string;
+  expiresAt?: string;
+}
+
+export interface RoomFileInput {
+  fileName: string;
+  fileSize?: number;
+  mimeType?: string;
+  encryptedAesKey: string;
+  iv: string;
+  authTag: string;
+  ciphertext: string;
+  /** PEM public key of the sender for verification */
+  senderPublicKey: string;
+}
+
+export interface RoomFile {
+  id: number;
+  roomCode: string;
+  fileName: string;
+  /** @nullable */
+  fileSize?: number | null;
+  /** @nullable */
+  mimeType?: string | null;
+  encryptedAesKey: string;
+  iv: string;
+  authTag: string;
+  ciphertext: string;
+  senderPublicKey: string;
+  /** @nullable */
+  downloadedAt?: string | null;
+  createdAt: string;
 }
 

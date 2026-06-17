@@ -8,11 +8,9 @@ servers:
     description: Base API path
 tags:
   - name: health
-    description: Health operations
   - name: keys
-    description: RSA key pair management
   - name: files
-    description: File encryption and decryption operations
+  - name: rooms
 
 paths:
   /healthz:
@@ -20,7 +18,6 @@ paths:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -34,7 +31,6 @@ paths:
       operationId: generateKeyPair
       tags: [keys]
       summary: Generate RSA key pair
-      description: Generates a new RSA-2048 key pair and stores metadata
       requestBody:
         required: true
         content:
@@ -54,7 +50,6 @@ paths:
       operationId: listKeyPairs
       tags: [keys]
       summary: List stored key pairs
-      description: Returns metadata for all stored key pairs (no private keys)
       responses:
         "200":
           description: List of key pairs
@@ -104,7 +99,6 @@ paths:
       operationId: encryptFile
       tags: [files]
       summary: Encrypt a file with hybrid AES-RSA
-      description: Encrypts file content with AES-256-GCM; the AES key is encrypted with the provided RSA public key
       requestBody:
         required: true
         content:
@@ -124,7 +118,6 @@ paths:
       operationId: decryptFile
       tags: [files]
       summary: Decrypt an encrypted file bundle
-      description: Decrypts an AES-256-GCM encrypted file using the RSA private key to unwrap the AES key
       requestBody:
         required: true
         content:
@@ -144,7 +137,6 @@ paths:
       operationId: listFileOperations
       tags: [files]
       summary: List recent file operations
-      description: Returns a log of recent encrypt/decrypt operations
       responses:
         "200":
           description: File operation history
@@ -160,7 +152,6 @@ paths:
       operationId: getFileStats
       tags: [files]
       summary: Get file operation statistics
-      description: Returns aggregated stats for encrypt/decrypt activity
       responses:
         "200":
           description: Statistics
@@ -169,6 +160,164 @@ paths:
               schema:
                 $ref: "#/components/schemas/FileStats"
 
+  /rooms:
+    post:
+      operationId: createRoom
+      tags: [rooms]
+      summary: Create a transfer room and get a pairing code
+      responses:
+        "201":
+          description: Room created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Room"
+
+  /rooms/{code}:
+    get:
+      operationId: getRoomStatus
+      tags: [rooms]
+      summary: Get room status
+      parameters:
+        - name: code
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Room info
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Room"
+        "404":
+          description: Room not found
+    delete:
+      operationId: closeRoom
+      tags: [rooms]
+      summary: Close a room
+      parameters:
+        - name: code
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Closed
+
+  /rooms/{code}/join:
+    post:
+      operationId: joinRoom
+      tags: [rooms]
+      summary: Join an existing room as the second device
+      parameters:
+        - name: code
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Joined
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Room"
+        "404":
+          description: Room not found
+        "409":
+          description: Room already full
+
+  /rooms/{code}/files:
+    post:
+      operationId: sendRoomFile
+      tags: [rooms]
+      summary: Upload an encrypted file to a room for the peer to receive
+      parameters:
+        - name: code
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RoomFileInput"
+      responses:
+        "201":
+          description: File staged for transfer
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RoomFile"
+    get:
+      operationId: listRoomFiles
+      tags: [rooms]
+      summary: List files pending in a room
+      parameters:
+        - name: code
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Pending files
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RoomFile"
+
+  /rooms/{code}/files/{fileId}:
+    get:
+      operationId: downloadRoomFile
+      tags: [rooms]
+      summary: Download a specific file from a room
+      parameters:
+        - name: code
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: fileId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: File data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RoomFile"
+        "404":
+          description: File not found
+    delete:
+      operationId: acknowledgeRoomFile
+      tags: [rooms]
+      summary: Acknowledge receipt and remove a file from the room
+      parameters:
+        - name: code
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: fileId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Acknowledged
+
 components:
   schemas:
     HealthStatus:
@@ -176,8 +325,7 @@ components:
       properties:
         status:
           type: string
-      required:
-        - status
+      required: [status]
 
     KeyPairInput:
       type: object
@@ -185,11 +333,9 @@ components:
       properties:
         label:
           type: string
-          description: Human-readable name for this key pair
           minLength: 1
         keySize:
           type: integer
-          description: RSA key size in bits (default 2048)
           default: 2048
 
     KeyPairMeta:
@@ -204,7 +350,6 @@ components:
           type: integer
         fingerprint:
           type: string
-          description: SHA-256 fingerprint of the public key
         createdAt:
           type: string
 
@@ -222,10 +367,8 @@ components:
           type: string
         publicKey:
           type: string
-          description: PEM-encoded RSA public key
         privateKey:
           type: string
-          description: PEM-encoded RSA private key
         createdAt:
           type: string
 
@@ -235,16 +378,12 @@ components:
       properties:
         fileName:
           type: string
-          description: Original file name
         fileData:
           type: string
-          description: Base64-encoded file content
         publicKey:
           type: string
-          description: PEM-encoded RSA public key used to wrap the AES key
         keyId:
           type: ["integer", "null"]
-          description: Optional reference to a stored key pair
 
     EncryptResult:
       type: object
@@ -256,19 +395,14 @@ components:
           type: string
         encryptedAesKey:
           type: string
-          description: Base64-encoded RSA-encrypted AES key
         iv:
           type: string
-          description: Base64-encoded initialization vector
         authTag:
           type: string
-          description: Base64-encoded GCM authentication tag
         ciphertext:
           type: string
-          description: Base64-encoded AES-256-GCM encrypted file content
         algorithm:
           type: string
-          description: Encryption algorithm description
         createdAt:
           type: string
 
@@ -278,22 +412,16 @@ components:
       properties:
         encryptedAesKey:
           type: string
-          description: Base64-encoded RSA-encrypted AES key
         iv:
           type: string
-          description: Base64-encoded initialization vector
         authTag:
           type: string
-          description: Base64-encoded GCM authentication tag
         ciphertext:
           type: string
-          description: Base64-encoded AES-256-GCM encrypted file content
         privateKey:
           type: string
-          description: PEM-encoded RSA private key
         fileName:
           type: string
-          description: Original file name for logging
 
     DecryptResult:
       type: object
@@ -303,7 +431,6 @@ components:
           type: string
         fileData:
           type: string
-          description: Base64-encoded decrypted file content
         algorithm:
           type: string
         decryptedAt:
@@ -317,7 +444,6 @@ components:
           type: integer
         type:
           type: string
-          description: "encrypt or decrypt"
         fileName:
           type: string
         algorithm:
@@ -345,3 +471,70 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/FileOperation"
+
+    Room:
+      type: object
+      required: [code, status, createdAt]
+      properties:
+        code:
+          type: string
+        status:
+          type: string
+          description: "waiting | connected | closed"
+        peerCount:
+          type: integer
+        createdAt:
+          type: string
+        expiresAt:
+          type: string
+
+    RoomFileInput:
+      type: object
+      required: [fileName, encryptedAesKey, iv, authTag, ciphertext, senderPublicKey]
+      properties:
+        fileName:
+          type: string
+        fileSize:
+          type: integer
+        mimeType:
+          type: string
+        encryptedAesKey:
+          type: string
+        iv:
+          type: string
+        authTag:
+          type: string
+        ciphertext:
+          type: string
+        senderPublicKey:
+          type: string
+          description: PEM public key of the sender for verification
+
+    RoomFile:
+      type: object
+      required: [id, roomCode, fileName, encryptedAesKey, iv, authTag, ciphertext, senderPublicKey, createdAt]
+      properties:
+        id:
+          type: integer
+        roomCode:
+          type: string
+        fileName:
+          type: string
+        fileSize:
+          type: ["integer", "null"]
+        mimeType:
+          type: ["string", "null"]
+        encryptedAesKey:
+          type: string
+        iv:
+          type: string
+        authTag:
+          type: string
+        ciphertext:
+          type: string
+        senderPublicKey:
+          type: string
+        downloadedAt:
+          type: ["string", "null"]
+        createdAt:
+          type: string

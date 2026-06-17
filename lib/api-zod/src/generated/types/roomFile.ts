@@ -6,13 +6,20 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface EncryptResult {
-  id?: number;
+export interface RoomFile {
+  id: number;
+  roomCode: string;
   fileName: string;
+  /** @nullable */
+  fileSize?: number | null;
+  /** @nullable */
+  mimeType?: string | null;
   encryptedAesKey: string;
   iv: string;
   authTag: string;
   ciphertext: string;
-  algorithm: string;
+  senderPublicKey: string;
+  /** @nullable */
+  downloadedAt?: string | null;
   createdAt: string;
 }

@@ -16,3 +16,6 @@ export * from './healthStatus';
 export * from './keyPairInput';
 export * from './keyPairMeta';
 export * from './keyPairResult';
+export * from './room';
+export * from './roomFile';
+export * from './roomFileInput';

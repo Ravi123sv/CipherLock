@@ -8,7 +8,6 @@
 
 export interface DecryptResult {
   fileName: string;
-  /** Base64-encoded decrypted file content */
   fileData: string;
   algorithm: string;
   decryptedAt?: string;

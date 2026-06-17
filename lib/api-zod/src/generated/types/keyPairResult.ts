@@ -11,9 +11,7 @@ export interface KeyPairResult {
   label: string;
   keySize: number;
   fingerprint: string;
-  /** PEM-encoded RSA public key */
   publicKey: string;
-  /** PEM-encoded RSA private key */
   privateKey: string;
   createdAt: string;
 }

@@ -1,15 +1,19 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: CipherLock - Hybrid AES-RSA Encryption API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: keys
+    description: RSA key pair management
+  - name: files
+    description: File encryption and decryption operations
+
 paths:
   /healthz:
     get:
@@ -24,6 +28,147 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /keys/generate:
+    post:
+      operationId: generateKeyPair
+      tags: [keys]
+      summary: Generate RSA key pair
+      description: Generates a new RSA-2048 key pair and stores metadata
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/KeyPairInput"
+      responses:
+        "201":
+          description: Key pair generated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KeyPairResult"
+
+  /keys:
+    get:
+      operationId: listKeyPairs
+      tags: [keys]
+      summary: List stored key pairs
+      description: Returns metadata for all stored key pairs (no private keys)
+      responses:
+        "200":
+          description: List of key pairs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/KeyPairMeta"
+
+  /keys/{id}:
+    get:
+      operationId: getKeyPair
+      tags: [keys]
+      summary: Get a key pair by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Key pair detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KeyPairResult"
+        "404":
+          description: Not found
+    delete:
+      operationId: deleteKeyPair
+      tags: [keys]
+      summary: Delete a key pair
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /files/encrypt:
+    post:
+      operationId: encryptFile
+      tags: [files]
+      summary: Encrypt a file with hybrid AES-RSA
+      description: Encrypts file content with AES-256-GCM; the AES key is encrypted with the provided RSA public key
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EncryptInput"
+      responses:
+        "200":
+          description: Encrypted bundle
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EncryptResult"
+
+  /files/decrypt:
+    post:
+      operationId: decryptFile
+      tags: [files]
+      summary: Decrypt an encrypted file bundle
+      description: Decrypts an AES-256-GCM encrypted file using the RSA private key to unwrap the AES key
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DecryptInput"
+      responses:
+        "200":
+          description: Decrypted file
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DecryptResult"
+
+  /files:
+    get:
+      operationId: listFileOperations
+      tags: [files]
+      summary: List recent file operations
+      description: Returns a log of recent encrypt/decrypt operations
+      responses:
+        "200":
+          description: File operation history
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/FileOperation"
+
+  /files/stats:
+    get:
+      operationId: getFileStats
+      tags: [files]
+      summary: Get file operation statistics
+      description: Returns aggregated stats for encrypt/decrypt activity
+      responses:
+        "200":
+          description: Statistics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FileStats"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +179,169 @@ components:
       required:
         - status
 
+    KeyPairInput:
+      type: object
+      required: [label]
+      properties:
+        label:
+          type: string
+          description: Human-readable name for this key pair
+          minLength: 1
+        keySize:
+          type: integer
+          description: RSA key size in bits (default 2048)
+          default: 2048
+
+    KeyPairMeta:
+      type: object
+      required: [id, label, keySize, fingerprint, createdAt]
+      properties:
+        id:
+          type: integer
+        label:
+          type: string
+        keySize:
+          type: integer
+        fingerprint:
+          type: string
+          description: SHA-256 fingerprint of the public key
+        createdAt:
+          type: string
+
+    KeyPairResult:
+      type: object
+      required: [id, label, keySize, fingerprint, publicKey, privateKey, createdAt]
+      properties:
+        id:
+          type: integer
+        label:
+          type: string
+        keySize:
+          type: integer
+        fingerprint:
+          type: string
+        publicKey:
+          type: string
+          description: PEM-encoded RSA public key
+        privateKey:
+          type: string
+          description: PEM-encoded RSA private key
+        createdAt:
+          type: string
+
+    EncryptInput:
+      type: object
+      required: [fileName, fileData, publicKey]
+      properties:
+        fileName:
+          type: string
+          description: Original file name
+        fileData:
+          type: string
+          description: Base64-encoded file content
+        publicKey:
+          type: string
+          description: PEM-encoded RSA public key used to wrap the AES key
+        keyId:
+          type: ["integer", "null"]
+          description: Optional reference to a stored key pair
+
+    EncryptResult:
+      type: object
+      required: [fileName, encryptedAesKey, iv, authTag, ciphertext, algorithm, createdAt]
+      properties:
+        id:
+          type: integer
+        fileName:
+          type: string
+        encryptedAesKey:
+          type: string
+          description: Base64-encoded RSA-encrypted AES key
+        iv:
+          type: string
+          description: Base64-encoded initialization vector
+        authTag:
+          type: string
+          description: Base64-encoded GCM authentication tag
+        ciphertext:
+          type: string
+          description: Base64-encoded AES-256-GCM encrypted file content
+        algorithm:
+          type: string
+          description: Encryption algorithm description
+        createdAt:
+          type: string
+
+    DecryptInput:
+      type: object
+      required: [encryptedAesKey, iv, authTag, ciphertext, privateKey]
+      properties:
+        encryptedAesKey:
+          type: string
+          description: Base64-encoded RSA-encrypted AES key
+        iv:
+          type: string
+          description: Base64-encoded initialization vector
+        authTag:
+          type: string
+          description: Base64-encoded GCM authentication tag
+        ciphertext:
+          type: string
+          description: Base64-encoded AES-256-GCM encrypted file content
+        privateKey:
+          type: string
+          description: PEM-encoded RSA private key
+        fileName:
+          type: string
+          description: Original file name for logging
+
+    DecryptResult:
+      type: object
+      required: [fileName, fileData, algorithm]
+      properties:
+        fileName:
+          type: string
+        fileData:
+          type: string
+          description: Base64-encoded decrypted file content
+        algorithm:
+          type: string
+        decryptedAt:
+          type: string
+
+    FileOperation:
+      type: object
+      required: [id, type, fileName, algorithm, createdAt]
+      properties:
+        id:
+          type: integer
+        type:
+          type: string
+          description: "encrypt or decrypt"
+        fileName:
+          type: string
+        algorithm:
+          type: string
+        keyId:
+          type: ["integer", "null"]
+        keyLabel:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+
+    FileStats:
+      type: object
+      required: [totalOperations, totalEncryptions, totalDecryptions, recentActivity]
+      properties:
+        totalOperations:
+          type: integer
+        totalEncryptions:
+          type: integer
+        totalDecryptions:
+          type: integer
+        totalKeyPairs:
+          type: integer
+        recentActivity:
+          type: array
+          items:
+            $ref: "#/components/schemas/FileOperation"

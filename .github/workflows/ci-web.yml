@@ -18,13 +18,13 @@ jobs:
           node-version: 20
           cache: pnpm
 
-      - name: Enable pnpm
+      - name: Install pnpm
         run: |
-          corepack enable
-          corepack prepare pnpm@9.15.0 --activate
+          npm i -g pnpm@9.15.0
 
       - name: Install
         run: pnpm install --frozen-lockfile
+
 
 
       - name: Build cipherlock

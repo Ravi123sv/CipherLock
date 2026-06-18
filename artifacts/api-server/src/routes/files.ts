@@ -5,6 +5,11 @@ import { eq, desc, sql } from "drizzle-orm";
 
 const router = Router();
 
+router.delete("/files", async (_req, res) => {
+  await db.delete(fileOperationsTable);
+  return res.status(204).send();
+});
+
 const ALGORITHM = "AES-256-GCM + RSA-OAEP-2048";
 
 router.post("/files/encrypt", async (req, res) => {

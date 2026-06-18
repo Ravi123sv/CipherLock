@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useConnection } from "@/contexts/connection-context";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
@@ -33,10 +34,21 @@ function formatBytes(bytes: number | null | undefined): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+function arrayBufferToBase64(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer);
+  let binary = "";
+  const chunk = 8192;
+  for (let i = 0; i < bytes.length; i += chunk) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
+  }
+  return btoa(binary);
+}
+
 export default function Transfer() {
   const [roomCode, setRoomCode] = useState<string | null>(null);
   const [joinCode, setJoinCode] = useState("");
   const queryClient = useQueryClient();
+  const { setRoomCode: setCtxCode, setStatus } = useConnection();
 
   const createRoom = useCreateRoom();
   const joinRoom = useJoinRoom();
@@ -50,6 +62,20 @@ export default function Transfer() {
   });
 
   const isConnected = roomStatus?.status === "connected" || (roomStatus?.peerCount ?? 0) >= 2;
+
+  // Sync connection status to context for sidebar badge
+  useEffect(() => {
+    if (!roomCode) {
+      setCtxCode(null);
+      setStatus("offline");
+    } else if (isConnected) {
+      setCtxCode(roomCode);
+      setStatus("connected");
+    } else {
+      setCtxCode(roomCode);
+      setStatus("waiting");
+    }
+  }, [roomCode, isConnected, setCtxCode, setStatus]);
 
   const handleCreateSession = () => {
     createRoom.mutate(undefined, {
@@ -73,9 +99,9 @@ export default function Transfer() {
   };
 
   const handleDisconnect = () => {
+    queryClient.invalidateQueries({ queryKey: getGetRoomStatusQueryKey(roomCode ?? "") });
     setRoomCode(null);
     setJoinCode("");
-    queryClient.invalidateQueries({ queryKey: getGetRoomStatusQueryKey(roomCode ?? "") });
     toast.info("Disconnected from room");
   };
 
@@ -275,7 +301,7 @@ function ConnectedState({ roomCode, onDisconnect }: { roomCode: string; onDiscon
     try {
       for (const file of localFiles) {
         const arrayBuffer = await file.arrayBuffer();
-        const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+        const base64 = arrayBufferToBase64(arrayBuffer);
 
         const encrypted = await encryptFile.mutateAsync({
           data: {

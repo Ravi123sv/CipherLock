@@ -1,0 +1,1 @@
+- [esbuild CJS interop](esbuild-cjs-interop.md) — `require("cjs-pkg")` in ESM bundle wraps at `.default`; prefer `child_process.spawn` for CLI tools to avoid import drama.

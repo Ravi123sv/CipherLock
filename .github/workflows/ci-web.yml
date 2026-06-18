@@ -21,9 +21,11 @@ jobs:
       - name: Install pnpm
         run: |
           npm i -g pnpm@9.15.0
+          pnpm --version
 
       - name: Install
         run: pnpm install --frozen-lockfile
+
 
 
 
